@@ -1,14 +1,6 @@
 # bounty-cli
 
-A CLI tool for managing GitHub bounty workflows, making it easier to work on GitHub issues by automating repository forking and branch setup.
-
-## Features
-
-- 🔄 Automatically fork repositories
-- 📦 Clone repositories locally
-- 🌿 Create and manage issue-specific branches
-- 🔑 GitHub token integration
-- 🐚 Shell completion support
+A CLI tool for ghbountybot.
 
 ## Installation
 
@@ -45,16 +37,3 @@ Generate shell completions:
 ```bash
 bounty-cli completion <shell>
 ```
-
-## Development
-
-This project uses:
-- Rust nightly toolchain
-- `clippy` with strict lints
-- `tracing` for logging
-- `eyre` for error handling
-- `octocrab` for GitHub API integration
-
-## License
-
-MIT

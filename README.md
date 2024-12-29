@@ -28,9 +28,8 @@ Or pass it directly with the `--github-token` flag.
 
 ### Commands
 
-Start working on a bounty:
 ```bash
-bounty-cli bounty start owner/repo issue_number
+bounty-cli --help
 ```
 
 Generate shell completions:

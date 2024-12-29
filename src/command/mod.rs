@@ -1,10 +1,12 @@
-use clap::Subcommand;
+use crate::Cli;
+use clap::CommandFactory;
+use clap_complete::Shell;
 use eyre::WrapErr;
 use git2::{build::RepoBuilder, BranchType, Cred, RemoteCallbacks, Repository};
 use octocrab::Octocrab;
 use tracing::{debug, instrument, warn};
 
-#[derive(Debug, Subcommand)]
+#[derive(clap::Subcommand, Debug)]
 pub enum Command {
     /// Start working on a bounty by forking repo and creating a branch
     #[command(name = "start")]
@@ -14,17 +16,31 @@ pub enum Command {
         /// Issue number to work on
         issue_number: u64,
     },
+
+    /// Generate shell completion scripts
+    Completion {
+        /// The shell to generate completions for
+        #[arg(value_enum)]
+        shell: Shell,
+    },
 }
 
 #[instrument(skip(github_token))]
-pub async fn handle_bounty(command: Command, github_token: &str) -> eyre::Result<()> {
+pub async fn handle(command: Command, github_token: &str) -> eyre::Result<()> {
     debug!(?command, "handling bounty command");
     match command {
         Command::Start { repo, issue_number } => {
             start_bounty(&repo, issue_number, github_token).await?;
         }
+        Command::Completion { shell } => completion(shell),
     }
     Ok(())
+}
+
+fn completion(shell: Shell) {
+    let mut cmd = Cli::command();
+    let name = cmd.get_name().to_string();
+    clap_complete::generate(shell, &mut cmd, name, &mut std::io::stdout());
 }
 
 #[instrument(skip(github_token), fields(owner, repo))]

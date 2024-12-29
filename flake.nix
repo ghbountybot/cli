@@ -149,7 +149,7 @@
             Env = [
               "SSL_CERT_FILE=/etc/ssl/certs/ca-bundle.crt"  # Enable SSL certificate verification
             ];
-            Architecture = arch;
+            Architecture = if arch == "arm64" then "arm64v8" else arch;
           };
         };
 

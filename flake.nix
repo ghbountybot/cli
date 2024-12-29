@@ -57,18 +57,14 @@
         # Packages
         packages = {
           default = package;
-          docker = pkgs.dockerTools.buildImage {
+          docker = pkgs.dockerTools.buildLayeredImage {
             name = "bounty-cli";
             tag = "latest";
             
-            copyToRoot = pkgs.buildEnv {
-              name = "image-root";
-              paths = [ 
-                package 
-                pkgs.cacert
-              ];
-              pathsToLink = [ "/bin" "/etc/ssl" ];
-            };
+            contents = [
+              package
+              pkgs.cacert  # Only include SSL certificates
+            ];
 
             config = {
               Cmd = [ "/bin/bounty-cli" ];

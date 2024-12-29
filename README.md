@@ -2,18 +2,20 @@
 
 A CLI tool for ghbountybot.
 
-## Installation
+## Running
 
-### From Git
+### cargo
 
 ```bash
 cargo install --git https://github.com/ghbountybot/cli
+bounty-cli
 ```
 
-### Requirements
+### nix
 
-- Rust (nightly toolchain)
-- Git
+```bash
+nix run github:ghbountybot/cli
+```
 
 ## Usage
 

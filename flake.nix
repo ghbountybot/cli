@@ -68,7 +68,7 @@
 
           nativeBuildInputs = with pkgsStatic; [
             pkg-config
-            pkgsStatic.stdenv.cc
+            stdenv.cc
           ];
 
           buildInputs = with pkgsStatic; [
@@ -91,9 +91,18 @@
           # Force static linking
           NIX_LDFLAGS = "-L${pkgsStatic.openssl.out}/lib -lssl -lcrypto";
           
-          # Use musl target
-          RUSTFLAGS = "-C target-feature=+crt-static";
+          # Use musl target and force static linking
+          RUSTFLAGS = "-C target-feature=+crt-static -C link-arg=-static";
+          
+          # Strip the binary
+          stripAllList = [ "bin" ];
         };
+
+        # Create a minimal static binary package
+        staticBinary = pkgs.runCommand "bounty-cli-static" {} ''
+          mkdir -p $out/bin
+          cp ${dockerPackage}/bin/bounty-cli $out/bin/
+        '';
 
       in
       {
@@ -118,15 +127,16 @@
             };
 
             contents = [
-              (pkgs.runCommand "minimal-runtime" {} ''
+              (pkgs.runCommand "ssl-certs" {} ''
                 mkdir -p $out/etc/ssl/certs
                 cp ${pkgs.cacert}/etc/ssl/certs/ca-bundle.crt $out/etc/ssl/certs/
               '')
-              dockerPackage
+              staticBinary
             ];
 
             config = {
-              Cmd = [ "/bin/bounty-cli" ];
+              Entrypoint = [ "/bin/bounty-cli" ];
+              Cmd = [ ];
               Env = [
                 "SSL_CERT_FILE=/etc/ssl/certs/ca-bundle.crt"
               ];

@@ -114,28 +114,51 @@ async fn start_bounty(
         .unwrap_or_else(|| "master".to_string());
     debug!(%default_branch, "using repository default branch");
 
-    status_pb.set_message("Creating draft pull request...");
-    let pr = octocrab
+    status_pb.set_message("Checking for existing pull request...");
+    // First check if PR already exists
+    let existing_prs = octocrab
         .pulls(owner, repo)
-        .create(
-            format!("WIP: Fix #{issue_number}"),
-            format!("{fork_owner}:issue-{issue_number}"),
-            default_branch,
-        )
-        .body(format!(
-            "Working on issue #{issue_number}\n\nThis PR is a work in progress."
-        ))
-        .draft(true)
+        .list()
+        .head(format!("{fork_owner}:issue-{issue_number}"))
         .send()
         .await
-        .wrap_err("failed to create pull request")?;
+        .wrap_err("failed to list pull requests")?;
+
+    let pr = if let Some(existing_pr) = existing_prs.items.into_iter().next() {
+        debug!("Found existing PR");
+        status_pb.set_message("✓ Found existing pull request");
+        existing_pr
+    } else {
+        status_pb.set_message("Creating draft pull request...");
+        octocrab
+            .pulls(owner, repo)
+            .create(
+                format!("WIP: Fix #{issue_number}"),
+                format!("{fork_owner}:issue-{issue_number}"),
+                default_branch,
+            )
+            .body(format!(
+                "Working on issue #{issue_number}\n\nThis PR is a work in progress."
+            ))
+            .draft(true)
+            .send()
+            .await
+            .wrap_err("failed to create pull request")?
+    };
 
     status_pb.finish_with_message(format!("✨ Ready to work on issue #{issue_number}"));
+
+    let pr_url = pr.html_url.unwrap();
 
     // Print final status in a clean way
     println!("\n📂 Repository: {}", repo_path.display());
     println!("🔗 Issue: https://github.com/{owner}/{repo}/issues/{issue_number}");
-    println!("🚀 Pull Request: {}", pr.html_url.unwrap());
+    println!("🚀 Pull Request: {pr_url}");
+
+    // Open PR in browser
+    if let Err(e) = open::that(pr_url.as_str()) {
+        warn!("Failed to open PR URL in browser: {}", e);
+    }
 
     Ok(())
 }

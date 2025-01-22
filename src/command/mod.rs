@@ -3,7 +3,9 @@ use clap::CommandFactory;
 use clap_complete::Shell;
 use eyre::WrapErr;
 use git2::{build::RepoBuilder, BranchType, Cred, RemoteCallbacks, Repository};
+use indicatif::{MultiProgress, ProgressBar, ProgressStyle};
 use octocrab::Octocrab;
+use std::time::Duration;
 use tracing::{debug, instrument, warn};
 
 #[derive(clap::Subcommand, Debug)]
@@ -59,17 +61,27 @@ async fn start_bounty(
     tracing::Span::current().record("owner", owner);
     tracing::Span::current().record("repo", repo);
 
-    println!("🚀 Starting work on bounty for {owner}/{repo}#{issue_number}");
-    debug!("initializing GitHub client");
+    let multi = MultiProgress::new();
+    let spinner_style = ProgressStyle::with_template("{spinner:.green} {msg:.bold.dim}")
+        .unwrap()
+        .tick_chars("⣾⣽⣻⢿⡿⣟⣯⣷");
 
-    // Initialize GitHub client
+    // Single line that gets updated
+    let status_pb = multi.add(ProgressBar::new_spinner());
+    status_pb.set_style(spinner_style);
+    status_pb.enable_steady_tick(Duration::from_millis(80));
+
+    status_pb.set_message(format!(
+        "Starting work on bounty for {owner}/{repo}#{issue_number}"
+    ));
+
+    debug!("initializing GitHub client");
     let octocrab = Octocrab::builder()
         .personal_token(github_token.to_string())
         .build()
         .wrap_err("failed to initialize GitHub client")?;
 
-    println!("🔄 Creating fork of repository...");
-    // Create a fork if it doesn't exist
+    status_pb.set_message("Creating fork of repository...");
     let fork = octocrab
         .repos(owner, repo)
         .create_fork()
@@ -79,17 +91,36 @@ async fn start_bounty(
 
     debug!(?fork.owner, "fork created/exists");
     let fork_owner = fork.owner.unwrap().login.clone();
+    status_pb.set_message("✓ Fork created successfully");
 
-    // Handle all git operations in a separate sync function
-    let repo_path = setup_git_repository(owner, repo, &fork_owner, issue_number, github_token)?;
+    let repo_path = setup_git_repository(
+        owner,
+        repo,
+        &fork_owner,
+        issue_number,
+        github_token,
+        &status_pb,
+    )?;
 
-    // Create draft pull request
+    status_pb.set_message("Getting repository info...");
+    let repo_info = octocrab
+        .repos(owner, repo)
+        .get()
+        .await
+        .wrap_err("failed to get repository info")?;
+
+    let default_branch = repo_info
+        .default_branch
+        .unwrap_or_else(|| "master".to_string());
+    debug!(%default_branch, "using repository default branch");
+
+    status_pb.set_message("Creating draft pull request...");
     let pr = octocrab
         .pulls(owner, repo)
         .create(
             format!("WIP: Fix #{issue_number}"),
             format!("{fork_owner}:issue-{issue_number}"),
-            "main",
+            default_branch,
         )
         .body(format!(
             "Working on issue #{issue_number}\n\nThis PR is a work in progress."
@@ -99,10 +130,12 @@ async fn start_bounty(
         .await
         .wrap_err("failed to create pull request")?;
 
-    println!("✨ Created branch 'issue-{issue_number}' for issue #{issue_number}");
-    println!("📂 Repository cloned to: {}", repo_path.display());
-    println!("🔨 Ready to work on https://github.com/{owner}/{repo}/issues/{issue_number}");
-    println!("🚀 Draft PR created: {}", pr.html_url.unwrap());
+    status_pb.finish_with_message(format!("✨ Ready to work on issue #{issue_number}"));
+
+    // Print final status in a clean way
+    println!("\n📂 Repository: {}", repo_path.display());
+    println!("🔗 Issue: https://github.com/{owner}/{repo}/issues/{issue_number}");
+    println!("🚀 Pull Request: {}", pr.html_url.unwrap());
 
     Ok(())
 }
@@ -114,21 +147,23 @@ fn setup_git_repository(
     fork_owner: &str,
     issue_number: u64,
     github_token: &str,
+    status_pb: &ProgressBar,
 ) -> eyre::Result<std::path::PathBuf> {
-    // Clone or open local repo
     let current_dir = std::env::current_dir().wrap_err("failed to get current directory")?;
     let repo_path = current_dir.join(repo);
 
     let repository = if repo_path.exists() {
         debug!(path = ?repo_path, "opening existing repository");
-        Repository::open(&repo_path).wrap_err("failed to open existing repository")?
+        status_pb.set_message("Opening existing repository...");
+        let repo = Repository::open(&repo_path).wrap_err("failed to open existing repository")?;
+        status_pb.set_message("✓ Opened existing repository");
+        repo
     } else {
-        println!("📦 Cloning repository...");
+        status_pb.set_message("Cloning repository...");
         let fork_url = format!("https://github.com/{fork_owner}/{repo}.git");
 
         debug!(%fork_url, "using fork URL");
 
-        // Set up authentication callbacks
         let mut callbacks = RemoteCallbacks::new();
         callbacks.credentials(move |_url, _username_from_url, _allowed_types| {
             debug!("authenticating git operation");
@@ -139,11 +174,32 @@ fn setup_git_repository(
         let mut fo = git2::FetchOptions::new();
         fo.remote_callbacks(callbacks);
         builder.fetch_options(fo);
-        builder
+        let repo = builder
             .clone(&fork_url, &repo_path)
-            .wrap_err("failed to clone repository")?
+            .wrap_err("failed to clone repository")?;
+        status_pb.set_message("✓ Repository cloned successfully");
+        repo
     };
 
+    // Set the remote URL to the fork
+    let mut remote = repository
+        .find_remote("origin")
+        .wrap_err("failed to find remote")?;
+    let fork_url = format!("https://github.com/{fork_owner}/{repo}.git");
+    remote
+        .url()
+        .map(|url| {
+            if url != fork_url {
+                debug!("updating remote URL to fork");
+                repository
+                    .remote_set_url("origin", &fork_url)
+                    .wrap_err("failed to update remote URL")?;
+            }
+            Ok::<_, eyre::Report>(())
+        })
+        .transpose()?;
+
+    status_pb.set_message("Setting up branch...");
     let branch_name = format!("issue-{issue_number}");
     debug!(%branch_name, "setting up branch");
 
@@ -154,20 +210,20 @@ fn setup_git_repository(
         .peel_to_commit()
         .wrap_err("failed to get HEAD commit")?;
 
-    // Create a branch if it doesn't exist
     if repository
         .find_branch(&branch_name, BranchType::Local)
         .is_ok()
     {
         warn!(%branch_name, "branch already exists");
+        status_pb.set_message("✓ Using existing branch");
     } else {
         debug!(%branch_name, "creating new branch");
         repository
             .branch(&branch_name, &commit, false)
             .wrap_err("failed to create branch")?;
+        status_pb.set_message("✓ Created new branch");
     }
 
-    // Checkout branch
     debug!(%branch_name, "checking out branch");
     let obj = repository
         .revparse_single(&branch_name)
@@ -179,7 +235,8 @@ fn setup_git_repository(
         .set_head(&format!("refs/heads/{branch_name}"))
         .wrap_err("failed to update HEAD")?;
 
-    // Create a simple file to initialize the PR
+    status_pb.set_message("Initializing PR...");
+
     let readme_path = repo_path.join("BOUNTY.md");
     std::fs::write(
         &readme_path,
@@ -187,7 +244,6 @@ fn setup_git_repository(
     )
     .wrap_err("failed to create BOUNTY.md")?;
 
-    // Stage and commit the file
     let mut index = repository
         .index()
         .wrap_err("failed to get repository index")?;
@@ -218,27 +274,39 @@ fn setup_git_repository(
         )
         .wrap_err("failed to create commit")?;
 
-    // Push the branch to the fork
-    let mut remote = repository
-        .find_remote("origin")
-        .wrap_err("failed to find remote")?;
-
-    let mut callbacks = RemoteCallbacks::new();
-    callbacks.credentials(|_url, _username_from_url, _allowed_types| {
+    let mut fetch_callbacks = RemoteCallbacks::new();
+    fetch_callbacks.credentials(|_url, _username_from_url, _allowed_types| {
+        debug!("authenticating git fetch");
         Cred::userpass_plaintext("git", github_token)
     });
 
+    let mut fetch_options = git2::FetchOptions::new();
+    fetch_options.remote_callbacks(fetch_callbacks);
+
+    debug!("fetching from remote");
+    remote
+        .fetch(&[] as &[&str], Some(&mut fetch_options), None)
+        .wrap_err("failed to fetch from remote")?;
+
+    let mut push_callbacks = RemoteCallbacks::new();
+    push_callbacks.credentials(|_url, _username_from_url, _allowed_types| {
+        debug!("authenticating git push");
+        Cred::userpass_plaintext("git", github_token)
+    });
+
+    status_pb.set_message("Pushing changes...");
+    let refspec = format!("+refs/heads/{branch_name}:refs/heads/{branch_name}");
+    debug!(%refspec, "attempting to force push branch");
+
     let mut push_options = git2::PushOptions::new();
-    push_options.remote_callbacks(callbacks);
+    push_options.remote_callbacks(push_callbacks);
 
     remote
-        .push(
-            &[&format!(
-                "refs/heads/{branch_name}:refs/heads/{branch_name}"
-            )],
-            Some(&mut push_options),
-        )
+        .push(&[&refspec], Some(&mut push_options))
         .wrap_err("failed to push branch")?;
+
+    status_pb.set_message("✓ Changes pushed successfully");
+    status_pb.finish_with_message("✓ PR initialized");
 
     Ok(repo_path)
 }

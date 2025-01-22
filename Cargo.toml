@@ -12,6 +12,7 @@ clap_complete = "4.4"
 color-eyre = { version = "0.6.3", features = ["capture-spantrace"] }
 eyre = "0.6.12"
 git2 = { version = "0.20.0" }
+indicatif = { version = "0.17.8", features = ["improved_unicode"] }
 octocrab = { version = "0.43.0" }
 tokio = { version = "1.36", features = ["full"] }
 tracing = "0.1"

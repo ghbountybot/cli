@@ -7,9 +7,10 @@ use octocrab::Octocrab;
 use tracing::{debug, instrument, warn};
 
 #[derive(clap::Subcommand, Debug)]
+/// Start of Selection
 pub enum Command {
     /// Start working on a bounty by forking repo and creating a branch
-    #[command(name = "start")]
+    #[command(name = "start", aliases = ["s"])]
     Start {
         /// Repository in format "owner/repo"
         repo: String,
@@ -18,6 +19,7 @@ pub enum Command {
     },
 
     /// Generate shell completion scripts
+    #[command(name = "completion", aliases = ["c"])]
     Completion {
         /// The shell to generate completions for
         #[arg(value_enum)]
@@ -76,7 +78,43 @@ async fn start_bounty(
         .wrap_err("failed to create fork")?;
 
     debug!(?fork.owner, "fork created/exists");
+    let fork_owner = fork.owner.unwrap().login.clone();
 
+    // Handle all git operations in a separate sync function
+    let repo_path = setup_git_repository(owner, repo, &fork_owner, issue_number, github_token)?;
+
+    // Create draft pull request
+    let pr = octocrab
+        .pulls(owner, repo)
+        .create(
+            format!("WIP: Fix #{issue_number}"),
+            format!("{fork_owner}:issue-{issue_number}"),
+            "main",
+        )
+        .body(format!(
+            "Working on issue #{issue_number}\n\nThis PR is a work in progress."
+        ))
+        .draft(true)
+        .send()
+        .await
+        .wrap_err("failed to create pull request")?;
+
+    println!("✨ Created branch 'issue-{issue_number}' for issue #{issue_number}");
+    println!("📂 Repository cloned to: {}", repo_path.display());
+    println!("🔨 Ready to work on https://github.com/{owner}/{repo}/issues/{issue_number}");
+    println!("🚀 Draft PR created: {}", pr.html_url.unwrap());
+
+    Ok(())
+}
+
+#[instrument(skip(github_token))]
+fn setup_git_repository(
+    owner: &str,
+    repo: &str,
+    fork_owner: &str,
+    issue_number: u64,
+    github_token: &str,
+) -> eyre::Result<std::path::PathBuf> {
     // Clone or open local repo
     let current_dir = std::env::current_dir().wrap_err("failed to get current directory")?;
     let repo_path = current_dir.join(repo);
@@ -86,11 +124,7 @@ async fn start_bounty(
         Repository::open(&repo_path).wrap_err("failed to open existing repository")?
     } else {
         println!("📦 Cloning repository...");
-        let fork_url = format!(
-            "https://github.com/{}/{}.git",
-            fork.owner.unwrap().login,
-            repo
-        );
+        let fork_url = format!("https://github.com/{fork_owner}/{repo}.git");
 
         debug!(%fork_url, "using fork URL");
 
@@ -145,9 +179,66 @@ async fn start_bounty(
         .set_head(&format!("refs/heads/{branch_name}"))
         .wrap_err("failed to update HEAD")?;
 
-    println!("✨ Created branch '{branch_name}' for issue #{issue_number}");
-    println!("📂 Repository cloned to: {}", repo_path.display());
-    println!("🔨 Ready to work on https://github.com/{owner}/{repo}/issues/{issue_number}");
+    // Create a simple file to initialize the PR
+    let readme_path = repo_path.join("BOUNTY.md");
+    std::fs::write(
+        &readme_path,
+        format!("# Working on issue #{issue_number}\n\nThis PR is a work in progress.\n"),
+    )
+    .wrap_err("failed to create BOUNTY.md")?;
 
-    Ok(())
+    // Stage and commit the file
+    let mut index = repository
+        .index()
+        .wrap_err("failed to get repository index")?;
+    index
+        .add_path(std::path::Path::new("BOUNTY.md"))
+        .wrap_err("failed to stage BOUNTY.md")?;
+    index.write().wrap_err("failed to write index")?;
+
+    let tree_id = index.write_tree().wrap_err("failed to write tree")?;
+    let tree = repository
+        .find_tree(tree_id)
+        .wrap_err("failed to find tree")?;
+    let signature = repository.signature().wrap_err("failed to get signature")?;
+    let parent_commit = repository
+        .head()
+        .wrap_err("failed to get HEAD")?
+        .peel_to_commit()
+        .wrap_err("failed to get HEAD commit")?;
+
+    repository
+        .commit(
+            Some("HEAD"),
+            &signature,
+            &signature,
+            &format!("Initialize PR for issue #{issue_number}"),
+            &tree,
+            &[&parent_commit],
+        )
+        .wrap_err("failed to create commit")?;
+
+    // Push the branch to the fork
+    let mut remote = repository
+        .find_remote("origin")
+        .wrap_err("failed to find remote")?;
+
+    let mut callbacks = RemoteCallbacks::new();
+    callbacks.credentials(|_url, _username_from_url, _allowed_types| {
+        Cred::userpass_plaintext("git", github_token)
+    });
+
+    let mut push_options = git2::PushOptions::new();
+    push_options.remote_callbacks(callbacks);
+
+    remote
+        .push(
+            &[&format!(
+                "refs/heads/{branch_name}:refs/heads/{branch_name}"
+            )],
+            Some(&mut push_options),
+        )
+        .wrap_err("failed to push branch")?;
+
+    Ok(repo_path)
 }

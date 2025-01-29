@@ -37,49 +37,6 @@
             [ "x86_64-unknown-linux-musl" "aarch64-unknown-linux-musl" ];
         };
 
-      # Function to create static builds for different CPU architectures
-      mkStaticPackage = pkgs: arch:
-        let
-          pkgsStatic = import nixpkgs {
-            system = pkgs.system;
-            overlays = [ (import rust-overlay) ];
-            crossSystem = {
-              config = "${arch}-unknown-linux-musl";
-              isStatic = true;
-            };
-          };
-        in pkgsStatic.rustPlatform.buildRustPackage {
-          pname = "bounty";
-          version = "0.1.0";
-          src = ./.;
-
-          cargoLock = { lockFile = ./Cargo.lock; };
-
-          nativeBuildInputs = with pkgsStatic; [ pkg-config stdenv.cc ];
-
-          buildInputs = with pkgsStatic; [
-            openssl.dev
-            openssl.out
-            libgit2.dev
-            zlib.dev
-          ];
-
-          CARGO_BUILD_TARGET = "${arch}-unknown-linux-musl";
-          OPENSSL_STATIC = "1";
-          OPENSSL_LIB_DIR = "${pkgsStatic.openssl.out}/lib";
-          OPENSSL_INCLUDE_DIR = "${pkgsStatic.openssl.dev}/include";
-          OPENSSL_NO_VENDOR = "1";
-          LIBGIT2_SYS_USE_PKG_CONFIG = "1";
-          PKG_CONFIG_ALL_STATIC = "1";
-          PKG_CONFIG_PATH =
-            "${pkgsStatic.openssl.dev}/lib/pkgconfig:${pkgsStatic.libgit2.dev}/lib/pkgconfig";
-
-          NIX_LDFLAGS = "-L${pkgsStatic.openssl.out}/lib -lssl -lcrypto";
-          RUSTFLAGS = "-C target-feature=+crt-static -C link-arg=-static";
-
-          stripAllList = [ "bin" ];
-        };
-
     in {
       # Development shells for each system
       devShells = forAllSystems (pkgs: {

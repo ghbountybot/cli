@@ -41,3 +41,7 @@ codegen-units = 1
 opt-level = "z"
 strip = true
 panic = "abort"
+
+[dev-dependencies]
+mockall = "0.13.1"
+tempfile = "3.16.0"

@@ -7,4 +7,4 @@ Always use commands for adding/removing crates.
 - do `cargo add {pkg}`, `cargo add --dev {pkg}`
 - for removing do `cargo remove {pkg}`
 
-Run `cargo llvm-cov nextest` to run tests and then view HTML coverage file in `{projectRoot}/target/llvm-cov/html/index.html`
+Run `cargo llvm-cov nextest --branch` to run tests and then view HTML coverage file in `{projectRoot}/target/llvm-cov/html/index.html`

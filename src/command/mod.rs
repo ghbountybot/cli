@@ -160,8 +160,8 @@ async fn start_bounty(
     let pr_url = pr.html_url.unwrap();
 
     // Print final status in a clean way
-    println!("\n📂 Repository: {}", repo_path.display());
-    println!("🔗 Issue: https://github.com/{owner}/{repo}/issues/{issue_number}");
+    println!("\n� Repository: {}", repo_path.display());
+    println!("�🔗 Issue: https://github.com/{owner}/{repo}/issues/{issue_number}");
     println!("🚀 Pull Request: {pr_url}");
 
     // Open PR in browser

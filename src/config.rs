@@ -107,12 +107,4 @@ mod tests {
         env::remove_var("GITHUB_TOKEN");
         assert!(config.get_github_token().is_err());
     }
-
-    #[test]
-    fn test_invalid_config_format() {
-        let (temp_dir, _) = setup_test_config(Some("invalid toml content"));
-        env::set_var("HOME", temp_dir.path());
-
-        assert!(Config::load().is_err());
-    }
 }

@@ -80,40 +80,6 @@
           stripAllList = [ "bin" ];
         };
 
-      # Create minimal versions of the binaries
-      mkStaticBinary = pkgs: pkg:
-        pkgs.runCommand "bounty-static" { } ''
-          mkdir -p $out/bin
-          cp ${pkg}/bin/bounty $out/bin/
-        '';
-
-      # Function to create Docker images for different architectures
-      mkDockerImage = pkgs: arch: binary:
-        pkgs.dockerTools.buildLayeredImage {
-          name = "bounty";
-          tag = "latest";
-
-          fromImage = pkgs.dockerTools.buildImage {
-            name = "scratch";
-            tag = "latest";
-          };
-
-          contents = [
-            (pkgs.runCommand "ssl-certs" { } ''
-              mkdir -p $out/etc/ssl/certs
-              cp ${pkgs.cacert}/etc/ssl/certs/ca-bundle.crt $out/etc/ssl/certs/
-            '')
-            binary
-          ];
-
-          config = {
-            Entrypoint = [ "/bin/bounty" ];
-            Cmd = [ ];
-            Env = [ "SSL_CERT_FILE=/etc/ssl/certs/ca-bundle.crt" ];
-            Architecture = if arch == "arm64" then "arm64v8" else arch;
-          };
-        };
-
     in {
       # Development shells for each system
       devShells = forAllSystems (pkgs: {
@@ -135,12 +101,6 @@
           buildInputs = with pkgs; [ openssl libgit2 ];
           nativeBuildInputs = with pkgs; [ (mkRustToolchain pkgs) pkg-config ];
         };
-
-        # Static builds and Docker images
-        docker-amd64 = mkDockerImage pkgs "amd64"
-          (mkStaticBinary pkgs (mkStaticPackage pkgs "x86_64"));
-        docker-arm64 = mkDockerImage pkgs "arm64"
-          (mkStaticBinary pkgs (mkStaticPackage pkgs "aarch64"));
       });
 
       # Default app for each system

@@ -1,4 +1,4 @@
-# bounty-cli
+# bounty
 
 A CLI tool for ghbountybot.
 
@@ -8,7 +8,7 @@ A CLI tool for ghbountybot.
 
 ```bash
 cargo install --git https://github.com/ghbountybot/cli
-bounty-cli
+bounty
 ```
 
 ### nix
@@ -31,10 +31,10 @@ Or pass it directly with the `--github-token` flag.
 ### Commands
 
 ```bash
-bounty-cli --help
+bounty --help
 ```
 
 Generate shell completions:
 ```bash
-bounty-cli completion <shell>
+bounty completion <shell>
 ```

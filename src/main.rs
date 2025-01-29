@@ -1,4 +1,4 @@
-use bounty_cli::Cli;
+use bounty::{config, Cli};
 use clap::Parser;
 
 fn install_tracing() {
@@ -31,6 +31,9 @@ async fn main() -> eyre::Result<()> {
 
 async fn run() -> eyre::Result<()> {
     let cli = Cli::parse();
-    bounty_cli::command::handle(cli.command, &cli.github_token).await?;
+    let config = config::Config::load()?;
+    let token = config.get_github_token()?;
+
+    bounty::command::handle(cli.command, &token).await?;
     Ok(())
 }

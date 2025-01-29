@@ -1,7 +1,7 @@
 {
-  # This is the main configuration file for building and developing the bounty-cli Rust project
+  # This is the main configuration file for building and developing the bounty Rust project
   # using the Nix package manager. It handles dependencies, building, and Docker image creation.
-  description = "bounty-cli - A CLI tool";
+  description = "bounty - A CLI tool";
 
   # External dependencies needed to build the project
   inputs = {
@@ -49,7 +49,7 @@
 
         # Build configuration for local development
         nativePackage = pkgs.rustPlatform.buildRustPackage {
-          pname = "bounty-cli";
+          pname = "bounty";
           version = "0.1.0";
           src = ./.;
 
@@ -73,7 +73,7 @@
             };
           in
           pkgsStatic.rustPlatform.buildRustPackage {
-            pname = "bounty-cli";
+            pname = "bounty";
             version = "0.1.0";
             src = ./.;
 
@@ -116,9 +116,9 @@
         aarch64Package = mkStaticPackage "aarch64"; # For ARM processors (e.g., Apple M1/M2)
 
         # Create minimal versions of the binaries (just the executable, no extra files)
-        mkStaticBinary = pkg: pkgs.runCommand "bounty-cli-static" { } ''
+        mkStaticBinary = pkg: pkgs.runCommand "bounty-static" { } ''
           mkdir -p $out/bin
-          cp ${pkg}/bin/bounty-cli $out/bin/
+          cp ${pkg}/bin/bounty $out/bin/
         '';
 
         x86_64Binary = mkStaticBinary x86_64Package;
@@ -126,7 +126,7 @@
 
         # Function to create Docker images for different architectures
         mkDockerImage = arch: binary: pkgs.dockerTools.buildLayeredImage {
-          name = "bounty-cli";
+          name = "bounty";
           tag = "latest";
 
           # Start from an empty base image
@@ -146,7 +146,7 @@
 
           # Docker image configuration
           config = {
-            Entrypoint = [ "/bin/bounty-cli" ]; # Command to run when container starts
+            Entrypoint = [ "/bin/bounty" ]; # Command to run when container starts
             Cmd = [ ];
             Env = [
               "SSL_CERT_FILE=/etc/ssl/certs/ca-bundle.crt" # Enable SSL certificate verification
@@ -181,7 +181,7 @@
 
         # Make the package available to other Nix flakes
         overlays.default = final: prev: {
-          bounty-cli = nativePackage;
+          bounty = nativePackage;
         };
       }
     );

@@ -1,5 +1,5 @@
 [package]
-name = "bounty-cli"
+name = "bounty"
 version = "0.1.0"
 edition = "2021"
 authors = ["Andrew Gazelka <andrew.gazelka@gmail.com>"]
@@ -19,6 +19,9 @@ tracing = "0.1"
 tracing-error = "0.2"
 tracing-subscriber = { version = "0.3", features = ["env-filter"] }
 open = "5.0.1"
+serde = { version = "1.0.217", features = ["derive"] }
+toml = "0.8.19"
+dirs = "6.0.0"
 
 [lints.clippy]
 complexity = { level = "deny", priority = -1 }
@@ -27,6 +30,8 @@ pedantic = { level = "deny", priority = -1 }
 perf = { level = "deny", priority = -1 }
 style = { level = "deny", priority = -1 }
 suspicious = { level = "deny", priority = -1 }
+
+missing_errors_doc = "allow"
 
 [profile.release]
 lto = "fat"

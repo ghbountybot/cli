@@ -1,0 +1,10 @@
+---
+description: CLI commands
+globs: *
+---
+Always use commands for adding/removing crates.
+
+- do `cargo add {pkg}`, `cargo add --dev {pkg}`
+- for removing do `cargo remove {pkg}`
+
+Run `cargo nextest run` to run tests.

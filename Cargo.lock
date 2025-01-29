@@ -160,12 +160,14 @@ dependencies = [
  "indicatif",
  "octocrab",
  "open",
+ "regex",
  "serde",
  "tokio",
  "toml",
  "tracing",
  "tracing-error",
  "tracing-subscriber",
+ "url",
 ]
 
 [[package]]

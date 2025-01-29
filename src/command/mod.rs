@@ -1,4 +1,4 @@
-use crate::Cli;
+use crate::{Cli, RepoIssue};
 use clap::CommandFactory;
 use clap_complete::Shell;
 use eyre::WrapErr;
@@ -14,10 +14,13 @@ pub enum Command {
     /// Start working on a bounty by forking repo and creating a branch
     #[command(name = "start", aliases = ["s"])]
     Start {
-        /// Repository in format "owner/repo"
-        repo: String,
-        /// Issue number to work on
-        issue_number: u64,
+        /// Issue reference in any of these formats:
+        /// - <https://github.com/owner/repo/issues/123>
+        /// - github.com/owner/repo/issues/123
+        /// - owner/repo/issues/123
+        /// - owner/repo/123
+        /// - owner/repo#123
+        issue_ref: String,
     },
 
     /// Generate shell completion scripts
@@ -33,8 +36,14 @@ pub enum Command {
 pub async fn handle(command: Command, github_token: &str) -> eyre::Result<()> {
     debug!(?command, "handling bounty command");
     match command {
-        Command::Start { repo, issue_number } => {
-            start_bounty(&repo, issue_number, github_token).await?;
+        Command::Start { issue_ref } => {
+            let repo_issue = RepoIssue::parse(&issue_ref)?;
+            start_bounty(
+                &format!("{}/{}", repo_issue.owner, repo_issue.repo),
+                repo_issue.issue_number,
+                github_token,
+            )
+            .await?;
         }
         Command::Completion { shell } => completion(shell),
     }

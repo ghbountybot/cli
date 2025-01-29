@@ -1,8 +1,10 @@
 pub mod command;
 pub mod config;
+pub mod parse;
 
 use clap::Parser;
 pub use command::Command;
+pub use parse::RepoIssue;
 
 /// CLI tool for managing GitHub bounty workflows
 ///

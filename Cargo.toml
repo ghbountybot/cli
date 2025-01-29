@@ -12,15 +12,17 @@ clap = { version = "4.4", features = ["derive", "env"] }
 clap_complete = "4.4"
 color-eyre = { version = "0.6.3", features = ["capture-spantrace"] }
 eyre = "0.6.12"
-git2 = { version = "0.20.0" }
+git2 = "0.18"
 indicatif = { version = "0.17.8", features = ["improved_unicode"] }
 octocrab = { version = "0.43.0" }
+tempfile = "3.16.0"
 tokio = { version = "1.36", features = ["full"] }
 tracing = "0.1"
 tracing-error = "0.2"
 tracing-subscriber = { version = "0.3", features = ["env-filter"] }
 open = "5.0.1"
 serde = { version = "1.0.217", features = ["derive"] }
+serde_json = "1.0"
 toml = "0.8.19"
 dirs = "6.0.0"
 url = "2.5.4"
@@ -36,6 +38,7 @@ style = { level = "deny", priority = -1 }
 suspicious = { level = "deny", priority = -1 }
 
 missing_errors_doc = "allow"
+future_not_send = "allow"
 
 [profile.release]
 lto = "fat"
@@ -46,4 +49,3 @@ panic = "abort"
 
 [dev-dependencies]
 mockall = "0.13.1"
-tempfile = "3.16.0"

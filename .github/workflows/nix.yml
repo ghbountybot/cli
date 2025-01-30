@@ -2,10 +2,10 @@ name: Nix Build and Cache
 
 on:
   push:
-    branches: [ "main" ]
-    tags: [ 'v*' ]
+    branches: ["main"]
+    tags: ["v*"]
   pull_request:
-    branches: [ "main" ]
+    branches: ["main"]
 
 permissions:
   contents: read
@@ -25,20 +25,20 @@ jobs:
             platform: aarch64-darwin
     runs-on: ${{ matrix.os }}
     steps:
-    - uses: actions/checkout@v4
+      - uses: actions/checkout@v4
 
-    - name: Install Nix
-      uses: DeterminateSystems/nix-installer-action@main
-    
-    - name: Setup Nix cache
-      uses: DeterminateSystems/magic-nix-cache-action@main
+      - name: Install Nix
+        uses: DeterminateSystems/nix-installer-action@main
 
-    - name: Build native package
-      run: nix build .#default
+      - name: Setup Nix cache
+        uses: DeterminateSystems/flakehub-cache-action@main
 
-    - name: Upload to Cachix
-      uses: cachix/cachix-action@v14
-      with:
-        name: ghbountybot
-        authToken: '${{ secrets.CACHIX_AUTH_TOKEN }}'
-        pushFilter: '.*' 
+      - name: Build native package
+        run: nix build .#default
+
+      - name: Upload to Cachix
+        uses: cachix/cachix-action@v14
+        with:
+          name: ghbountybot
+          authToken: "${{ secrets.CACHIX_AUTH_TOKEN }}"
+          pushFilter: ".*"

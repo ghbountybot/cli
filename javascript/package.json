@@ -1,0 +1,29 @@
+{
+  "name": "@bountybot/cli",
+  "version": "1.0.0",
+  "description": "CLI tool for managing GitHub bounties",
+  "bin": {
+    "bounty": "./bin/bounty",
+    "@bountybot/cli": "./bin/bounty"
+  },
+  "scripts": {
+    "prepare": "node scripts/build.js",
+    "build": "node scripts/build.js",
+    "build:release": "node scripts/build.js --release"
+    },
+  "files": [
+    "bin",
+    "scripts"
+  ],
+  "keywords": ["github", "bounty", "cli"],
+  "author": "Alec Dusheck <alec@simplyalec.com>",
+  "license": "MIT",
+  "os": ["darwin", "linux", "win32"],
+  "cpu": ["x64", "arm64"],
+  "devDependencies": {
+    "fs-extra": "^11.2.0"
+  },
+  "publishConfig": {
+    "access": "public"
+  }
+}

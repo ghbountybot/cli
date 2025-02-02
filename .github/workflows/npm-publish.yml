@@ -1,0 +1,86 @@
+name: Publish Package
+
+on:
+  push:
+    tags:
+      - 'v*'
+
+jobs:
+  build-binaries:
+    strategy:
+      matrix:
+        include:
+          - os: ubuntu-latest
+            target: x86_64-unknown-linux-gnu
+            artifact_name: bounty
+          - os: macos-latest
+            target: x86_64-apple-darwin
+            artifact_name: bounty
+          - os: macos-14
+            target: aarch64-apple-darwin
+            artifact_name: bounty
+          - os: windows-latest
+            target: x86_64-pc-windows-msvc
+            artifact_name: bounty.exe
+    
+    runs-on: ${{ matrix.os }}
+    steps:
+      - uses: actions/checkout@v4
+      
+      - name: Install Rust toolchain
+        uses: dtolnay/rust-toolchain@stable
+        with:
+          targets: ${{ matrix.target }}
+      
+      - name: Build binary
+        run: cargo build --release --target ${{ matrix.target }}
+      
+      - name: Upload binary artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: binary-${{ matrix.target }}
+          path: target/${{ matrix.target }}/release/${{ matrix.artifact_name }}
+
+  publish:
+    needs: build-binaries
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write
+    steps:
+      - uses: actions/checkout@v4
+      
+      - uses: pnpm/action-setup@v2
+        with:
+          version: 9
+      
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '20.x'
+          registry-url: 'https://registry.npmjs.org'
+          cache: 'pnpm'
+      
+      - name: Download all binary artifacts
+        uses: actions/download-artifact@v4
+        with:
+          path: javascript/bin
+          pattern: binary-*
+          merge-multiple: true
+      
+      - name: Make binaries executable
+        run: chmod +x javascript/bin/*
+      
+      - name: Install dependencies
+        working-directory: javascript
+        run: pnpm install --frozen-lockfile
+
+      - name: Set version from git tag
+        working-directory: javascript
+        run: |
+          VERSION=${GITHUB_REF#refs/tags/v}
+          npm version $VERSION --no-git-tag-version
+      
+      - name: Publish to npm
+        working-directory: javascript
+        run: pnpm publish --no-git-checks --registry https://registry.npmjs.org/
+        env:
+          NODE_AUTH_TOKEN: ${{secrets.NPM_TOKEN}} 

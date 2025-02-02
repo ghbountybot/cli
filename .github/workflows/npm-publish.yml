@@ -45,6 +45,8 @@ jobs:
           echo "OPENSSL_ROOT_DIR=$(brew --prefix openssl@3)" >> $GITHUB_ENV
           echo "OPENSSL_LIB_DIR=$(brew --prefix openssl@3)/lib" >> $GITHUB_ENV
           echo "OPENSSL_INCLUDE_DIR=$(brew --prefix openssl@3)/include" >> $GITHUB_ENV
+          # Set minimum macOS version
+          echo "MACOSX_DEPLOYMENT_TARGET=10.13" >> $GITHUB_ENV
 
       - name: Install Windows dependencies
         if: runner.os == 'Windows'
@@ -64,6 +66,8 @@ jobs:
         run: cargo build --release --target ${{ matrix.target }}
         env:
           OPENSSL_STATIC: 1
+          MACOSX_DEPLOYMENT_TARGET: "10.13"
+          RUSTFLAGS: "-C link-arg=-s"  # Strip symbols for smaller binaries
       
       - name: Upload binary artifact
         uses: actions/upload-artifact@v4

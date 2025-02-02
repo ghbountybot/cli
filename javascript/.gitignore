@@ -258,3 +258,8 @@ secrets/
 # Sentry Config File
 .env.sentry-build-plugin
 .env*.local
+
+# Allow some bin files
+node_modules/
+bin/*
+!bin/bounty.js

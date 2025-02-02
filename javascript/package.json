@@ -3,8 +3,8 @@
   "version": "1.0.0",
   "description": "CLI tool for managing GitHub bounties",
   "bin": {
-    "bounty": "./bin/bounty",
-    "@bountybot/cli": "./bin/bounty"
+    "bounty": "./bin/bounty.js",
+    "@bountybot/cli": "./bin/bounty.js"
   },
   "scripts": {
     "prepare": "node scripts/build.js",

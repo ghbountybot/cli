@@ -13,20 +13,48 @@ jobs:
           - os: ubuntu-latest
             target: x86_64-unknown-linux-gnu
             artifact_name: bounty
+            packages: pkg-config libssl-dev
           - os: macos-latest
             target: x86_64-apple-darwin
             artifact_name: bounty
+            packages: openssl@3
           - os: macos-14
             target: aarch64-apple-darwin
             artifact_name: bounty
+            packages: openssl@3
           - os: windows-latest
             target: x86_64-pc-windows-msvc
             artifact_name: bounty.exe
+            packages: openssl
     
     runs-on: ${{ matrix.os }}
     steps:
       - uses: actions/checkout@v4
       
+      # Install system dependencies
+      - name: Install Linux dependencies
+        if: runner.os == 'Linux'
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y ${{ matrix.packages }}
+
+      - name: Install macOS dependencies
+        if: runner.os == 'macOS'
+        run: |
+          brew install ${{ matrix.packages }}
+          echo "OPENSSL_ROOT_DIR=$(brew --prefix openssl@3)" >> $GITHUB_ENV
+          echo "OPENSSL_LIB_DIR=$(brew --prefix openssl@3)/lib" >> $GITHUB_ENV
+          echo "OPENSSL_INCLUDE_DIR=$(brew --prefix openssl@3)/include" >> $GITHUB_ENV
+
+      - name: Install Windows dependencies
+        if: runner.os == 'Windows'
+        run: |
+          vcpkg integrate install
+          vcpkg install openssl:x64-windows-static
+          echo "OPENSSL_ROOT_DIR=$env:VCPKG_INSTALLATION_ROOT/installed/x64-windows-static" >> $env:GITHUB_ENV
+          echo "OPENSSL_LIB_DIR=$env:VCPKG_INSTALLATION_ROOT/installed/x64-windows-static/lib" >> $env:GITHUB_ENV
+          echo "OPENSSL_INCLUDE_DIR=$env:VCPKG_INSTALLATION_ROOT/installed/x64-windows-static/include" >> $env:GITHUB_ENV
+          
       - name: Install Rust toolchain
         uses: dtolnay/rust-toolchain@stable
         with:
@@ -34,6 +62,8 @@ jobs:
       
       - name: Build binary
         run: cargo build --release --target ${{ matrix.target }}
+        env:
+          OPENSSL_STATIC: 1
       
       - name: Upload binary artifact
         uses: actions/upload-artifact@v4
@@ -62,12 +92,16 @@ jobs:
       - name: Download all binary artifacts
         uses: actions/download-artifact@v4
         with:
-          path: javascript/bin
-          pattern: binary-*
-          merge-multiple: true
-      
-      - name: Make binaries executable
-        run: chmod +x javascript/bin/*
+          path: temp-binaries
+
+      - name: Prepare binaries
+        run: |
+          mkdir -p javascript/bin
+          cp temp-binaries/binary-x86_64-unknown-linux-gnu/bounty javascript/bin/bounty-x86_64-unknown-linux-gnu
+          cp temp-binaries/binary-x86_64-apple-darwin/bounty javascript/bin/bounty-x86_64-apple-darwin
+          cp temp-binaries/binary-aarch64-apple-darwin/bounty javascript/bin/bounty-aarch64-apple-darwin
+          cp temp-binaries/binary-x86_64-pc-windows-msvc/bounty.exe javascript/bin/bounty-x86_64-pc-windows-msvc.exe
+          chmod +x javascript/bin/*
       
       - name: Install dependencies
         working-directory: javascript

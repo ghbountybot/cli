@@ -14,11 +14,6 @@ jobs:
             target: x86_64-unknown-linux-gnu
             artifact_name: bounty
             packages: pkg-config libssl-dev
-          - os: macos-latest
-            target: x86_64-apple-darwin
-            artifact_name: bounty
-            packages: openssl@3
-            arch: x86_64
           - os: macos-14
             target: aarch64-apple-darwin
             artifact_name: bounty
@@ -44,17 +39,10 @@ jobs:
         if: runner.os == 'macOS'
         run: |
           brew install ${{ matrix.packages }}
-          # Force architecture-specific OpenSSL
-          arch_flag="${{ matrix.arch }}"
-          brew uninstall --ignore-dependencies openssl@3
-          HOMEBREW_ARCH=$arch_flag brew install openssl@3
           echo "OPENSSL_ROOT_DIR=$(brew --prefix openssl@3)" >> $GITHUB_ENV
           echo "OPENSSL_LIB_DIR=$(brew --prefix openssl@3)/lib" >> $GITHUB_ENV
           echo "OPENSSL_INCLUDE_DIR=$(brew --prefix openssl@3)/include" >> $GITHUB_ENV
-          # Set minimum macOS version
           echo "MACOSX_DEPLOYMENT_TARGET=10.13" >> $GITHUB_ENV
-          # Set architecture-specific flags
-          echo "ARCHFLAGS=-arch $arch_flag" >> $GITHUB_ENV
 
       - name: Install Windows dependencies
         if: runner.os == 'Windows'
@@ -76,7 +64,6 @@ jobs:
           OPENSSL_STATIC: 1
           MACOSX_DEPLOYMENT_TARGET: "10.13"
           RUSTFLAGS: "-C link-arg=-s"  # Strip symbols for smaller binaries
-          ARCHFLAGS: ${{ matrix.arch && format('-arch {0}', matrix.arch) || '' }}
       
       - name: Upload binary artifact
         uses: actions/upload-artifact@v4
@@ -111,7 +98,6 @@ jobs:
         run: |
           mkdir -p javascript/bin
           cp temp-binaries/binary-x86_64-unknown-linux-gnu/bounty javascript/bin/bounty-x86_64-unknown-linux-gnu
-          cp temp-binaries/binary-x86_64-apple-darwin/bounty javascript/bin/bounty-x86_64-apple-darwin
           cp temp-binaries/binary-aarch64-apple-darwin/bounty javascript/bin/bounty-aarch64-apple-darwin
           cp temp-binaries/binary-x86_64-pc-windows-msvc/bounty.exe javascript/bin/bounty-x86_64-pc-windows-msvc.exe
           chmod +x javascript/bin/*

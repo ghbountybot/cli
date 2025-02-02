@@ -14,9 +14,6 @@ switch (`${platform}-${arch}`) {
     case 'linux-x64':
         binaryName = 'bounty-x86_64-unknown-linux-gnu';
         break;
-    case 'darwin-x64':
-        binaryName = 'bounty-x86_64-apple-darwin';
-        break;
     case 'darwin-arm64':
         binaryName = 'bounty-aarch64-apple-darwin';
         break;

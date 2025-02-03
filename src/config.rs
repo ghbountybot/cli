@@ -26,7 +26,9 @@ impl Config {
     /// Returns None if no token is found
     #[must_use]
     pub fn try_get_github_token(&self) -> Option<String> {
-        self.github_token.clone().or_else(|| std::env::var("GITHUB_TOKEN").ok())
+        self.github_token
+            .clone()
+            .or_else(|| std::env::var("GITHUB_TOKEN").ok())
     }
 
     /// Get the GitHub token, returning an error if not found

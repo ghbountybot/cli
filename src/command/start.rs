@@ -153,4 +153,4 @@ pub async fn start_bounty(
     println!("📝 Pull Request: {}", pr.html_url.unwrap());
 
     Ok(())
-} 
+}

@@ -49,7 +49,7 @@ impl Command {
 }
 
 /// Handle the command execution
-/// 
+///
 /// # Arguments
 /// * `command` - The command to execute
 /// * `github_token` - Optional GitHub token for authentication

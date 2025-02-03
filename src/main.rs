@@ -32,8 +32,8 @@ async fn main() -> eyre::Result<()> {
 async fn run() -> eyre::Result<()> {
     let cli = Cli::parse();
     let config = config::Config::load()?;
-    let token = config.get_github_token()?;
+    let token = config.try_get_github_token();
 
-    bounty::command::handle(cli.command, &token).await?;
+    bounty::command::handle(cli.command, token.as_deref()).await?;
     Ok(())
 }

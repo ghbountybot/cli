@@ -32,6 +32,27 @@ if (!fs.existsSync(binaryPath)) {
     process.exit(1);
 }
 
+// Check executable permissions on Unix-like systems
+if (platform !== 'win32') {
+    try {
+        const stat = fs.statSync(binaryPath);
+        // Check if file is executable for user
+        if ((stat.mode & 0o100) === 0) {
+            try {
+                fs.chmodSync(binaryPath, 0o755);
+            } catch (error) {
+                console.error('\nError: Binary is not executable and could not set permissions automatically.');
+                console.error(`Please run: sudo chmod +x "${binaryPath}"\n`);
+                process.exit(1);
+            }
+        }
+    } catch (error) {
+        console.error('\nError: Could not check binary permissions.');
+        console.error(`Please run: sudo chmod +x "${binaryPath}"\n`);
+        process.exit(1);
+    }
+}
+
 // Execute the binary with the same arguments
 const result = spawnSync(binaryPath, process.argv.slice(2), {
     stdio: 'inherit'

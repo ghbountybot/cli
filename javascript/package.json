@@ -3,14 +3,14 @@
   "version": "1.0.0",
   "description": "CLI tool for managing GitHub bounties",
   "bin": {
-    "bounty": "./bin/bounty.js",
-    "@bountybot/cli": "./bin/bounty.js"
+    "bounty": "./bin/bounty.js"
   },
   "scripts": {
     "prepare": "node scripts/build.js",
     "build": "node scripts/build.js",
-    "build:release": "node scripts/build.js --release"
-    },
+    "build:release": "node scripts/build.js --release",
+    "postinstall": "node scripts/postinstall.js"
+  },
   "files": [
     "bin",
     "scripts"
@@ -23,8 +23,10 @@
   "devDependencies": {
     "fs-extra": "^11.2.0"
   },
+  "dependencies": {
+    "fs-extra": "^11.2.0"
+  },
   "publishConfig": {
-    "access": "public",
-    "preserveSymlinks": true
+    "access": "public"
   }
 }

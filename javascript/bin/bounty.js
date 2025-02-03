@@ -21,7 +21,8 @@ switch (`${platform}-${arch}`) {
         binaryName = 'bounty-x86_64-pc-windows-msvc.exe';
         break;
     default:
-        console.error(`Unsupported platform: ${platform}-${arch}`);
+        console.error(`It doesn't seem that BountyBot supports your platform (${platform}-${arch}) yet!`);
+        console.log(`Please make a issue here, https://github.com/ghbountybot/cli/issues. Include your platform: ${platform}-${arch}.`)
         process.exit(1);
 }
 

@@ -22,15 +22,19 @@ impl Config {
         Ok(config)
     }
 
-    pub fn get_github_token(&self) -> Result<String> {
-        // Then try environment variable
-        let token = self
-            .github_token
+    /// Try to get the GitHub token from config file or environment
+    /// Returns None if no token is found
+    #[must_use]
+    pub fn try_get_github_token(&self) -> Option<String> {
+        self.github_token
             .clone()
             .or_else(|| std::env::var("GITHUB_TOKEN").ok())
-            .ok_or_else(|| eyre::eyre!("GitHub token not found in config file or environment"))?;
+    }
 
-        Ok(token)
+    /// Get the GitHub token, returning an error if not found
+    pub fn get_github_token(&self) -> Result<String> {
+        self.try_get_github_token()
+            .ok_or_else(|| eyre::eyre!("GitHub token not found in config file or environment"))
     }
 }
 

@@ -7,7 +7,7 @@ settings:
 importers:
 
   .:
-    devDependencies:
+    dependencies:
       fs-extra:
         specifier: ^11.2.0
         version: 11.3.0

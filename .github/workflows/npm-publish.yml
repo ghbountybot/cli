@@ -76,6 +76,9 @@ jobs:
     runs-on: ubuntu-latest
     permissions:
       contents: write
+    defaults:
+      run:
+        working-directory: javascript
     steps:
       - uses: actions/checkout@v4
       
@@ -96,24 +99,21 @@ jobs:
 
       - name: Prepare binaries
         run: |
-          mkdir -p javascript/bin
-          cp temp-binaries/binary-x86_64-unknown-linux-gnu/bounty javascript/bin/bounty-x86_64-unknown-linux-gnu
-          cp temp-binaries/binary-aarch64-apple-darwin/bounty javascript/bin/bounty-aarch64-apple-darwin
-          cp temp-binaries/binary-x86_64-pc-windows-msvc/bounty.exe javascript/bin/bounty-x86_64-pc-windows-msvc.exe
-          chmod +x javascript/bin/*
+          mkdir -p bin
+          cp ../temp-binaries/binary-x86_64-unknown-linux-gnu/bounty bin/bounty-x86_64-unknown-linux-gnu
+          cp ../temp-binaries/binary-aarch64-apple-darwin/bounty bin/bounty-aarch64-apple-darwin
+          cp ../temp-binaries/binary-x86_64-pc-windows-msvc/bounty.exe bin/bounty-x86_64-pc-windows-msvc.exe
+          chmod +x bin/*
       
       - name: Install dependencies
-        working-directory: javascript
         run: pnpm install --frozen-lockfile
 
       - name: Set version from git tag
-        working-directory: javascript
         run: |
           VERSION=${GITHUB_REF#refs/tags/v}
           npm version $VERSION --no-git-tag-version
       
       - name: Publish to npm
-        working-directory: javascript
         run: pnpm publish --no-git-checks --registry https://registry.npmjs.org/
         env:
           NODE_AUTH_TOKEN: ${{secrets.NPM_TOKEN}} 

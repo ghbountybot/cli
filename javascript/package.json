@@ -1,5 +1,5 @@
 {
-  "name": "@bountybot/cli",
+  "name": "bountybot",
   "version": "1.0.0",
   "description": "CLI tool for managing GitHub bounties",
   "bin": {
@@ -24,6 +24,7 @@
     "fs-extra": "^11.2.0"
   },
   "publishConfig": {
-    "access": "public"
+    "access": "public",
+    "preserveSymlinks": true
   }
 }

@@ -47,6 +47,15 @@ fs.chmodSync(path.join(destDir, 'bounty.js'), 0o755);
 if (process.env.CI) {
     // In CI, the workflow handles building and copying binaries
     console.log('Running in CI - binaries will be handled by the workflow');
+    
+    // Set executable permissions for all platform binaries
+    // executable flag isnt preserved by workflow
+    platforms.forEach(platform => {
+        const binaryPath = path.join(destDir, platform.binaryName);
+        if (fs.existsSync(binaryPath)) {
+            fs.chmodSync(binaryPath, 0o755);
+        }
+    });
 } else {
     // For local development, build only for the current platform
     let target;

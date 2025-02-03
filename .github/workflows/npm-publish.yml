@@ -57,6 +57,33 @@ jobs:
         uses: dtolnay/rust-toolchain@stable
         with:
           targets: ${{ matrix.target }}
+
+      # Cache cargo registry and build outputs
+      - uses: actions/cache@v4
+        with:
+          path: |
+            ~/.cargo/registry
+            ~/.cargo/git
+            target
+          key: ${{ runner.os }}-cargo-${{ matrix.target }}-${{ hashFiles('**/Cargo.lock') }}
+          restore-keys: |
+            ${{ runner.os }}-cargo-${{ matrix.target }}-
+            ${{ runner.os }}-cargo-
+
+      # Cache system dependencies
+      - uses: actions/cache@v4
+        if: runner.os == 'Windows'
+        with:
+          path: C:/vcpkg/installed
+          key: ${{ runner.os }}-vcpkg-${{ matrix.target }}-${{ hashFiles('**/vcpkg.json') }}
+
+      - uses: actions/cache@v4
+        if: runner.os == 'macOS'
+        with:
+          path: |
+            ~/Library/Caches/Homebrew
+            /usr/local/Cellar/openssl@3
+          key: ${{ runner.os }}-brew-${{ matrix.target }}-${{ hashFiles('**/Brewfile') }}
       
       - name: Build binary
         run: cargo build --release --target ${{ matrix.target }}
@@ -85,12 +112,14 @@ jobs:
       - uses: pnpm/action-setup@v2
         with:
           version: 9
+          working-directory: javascript
       
       - uses: actions/setup-node@v4
         with:
           node-version: '20.x'
           registry-url: 'https://registry.npmjs.org'
           cache: 'pnpm'
+          cache-dependency-path: javascript/pnpm-lock.yaml
       
       - name: Download all binary artifacts
         uses: actions/download-artifact@v4

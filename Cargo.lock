@@ -157,7 +157,6 @@ checksum = "8f68f53c83ab957f72c32642f3868eec03eb974d1fb82e453128456482613d36"
 name = "bounty"
 version = "0.2.0"
 dependencies = [
- "base64 0.22.1",
  "clap",
  "clap_complete",
  "color-eyre",

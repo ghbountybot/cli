@@ -1,4 +1,4 @@
-name: Nix Build and Cache
+name: Nix
 
 on:
   push:

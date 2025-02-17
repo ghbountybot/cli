@@ -1,5 +1,10 @@
 # bounty
 
+[![CI](https://github.com/ghbountybot/cli/actions/workflows/rust.yml/badge.svg)](https://github.com/ghbountybot/cli/actions/workflows/rust.yml)
+[![Nix](https://github.com/ghbountybot/cli/actions/workflows/nix.yml/badge.svg)](https://github.com/ghbountybot/cli/actions/workflows/nix.yml)
+[![Npm](https://github.com/ghbountybot/cli/actions/workflows/npm-publish.yml/badge.svg)](https://github.com/ghbountybot/cli/actions/workflows/npm-publish.yml)
+
+
 A CLI tool for ghbountybot.
 
 ## Running

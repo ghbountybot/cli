@@ -1,0 +1,5 @@
+---
+description: Rust Package management
+globs: *.toml
+---
+- use `cargo add {pkg}` to add; `cargo remove {pkg}` to remove; do not ever edit raw `*.toml` just use commands

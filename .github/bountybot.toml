@@ -1,0 +1,6 @@
+[bounty]
+# Labels that mark an issue as eligible for bounty
+labels = ["bounty", "good first issue", "help wanted"]
+
+# Labels that indicate a request for funds
+requestFundsLabels = ["funds-requested", "ready-for-review"]

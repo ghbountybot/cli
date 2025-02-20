@@ -10,6 +10,24 @@ pub struct RepoIssue {
 }
 
 impl RepoIssue {
+    fn try_parse_github_url(input: &str) -> Option<Result<Self>> {
+        if !input.starts_with("github.com/") {
+            return None;
+        }
+        let url_str = format!("https://{input}");
+        Some(
+            Url::parse(&url_str)
+                .map_err(Into::into)
+                .and_then(|url| Self::from_url(&url)),
+        )
+    }
+
+    #[must_use]
+    pub fn full_repo_name(&self) -> String {
+        let Self { owner, repo, .. } = self;
+        format!("{owner}/{repo}")
+    }
+
     /// Parse a repository issue reference from various formats:
     /// - Full URL: <https://github.com/owner/repo/issues/123>
     /// - Domain URL: github.com/owner/repo/issues/123
@@ -17,16 +35,14 @@ impl RepoIssue {
     /// - Short form: owner/repo/123
     /// - Issue reference: owner/repo#123
     pub fn parse(input: &str) -> Result<Self> {
-        // Try parsing as URL first
+        // Try parsing as full URL first
         if let Ok(url) = Url::parse(input) {
             return Self::from_url(&url);
         }
 
         // Try parsing as domain URL (add https:// prefix)
-        if input.starts_with("github.com/") {
-            if let Ok(url) = Url::parse(&format!("https://{input}")) {
-                return Self::from_url(&url);
-            }
+        if let Some(result) = Self::try_parse_github_url(input) {
+            return result;
         }
 
         // Try parsing as path or issue reference
@@ -43,7 +59,7 @@ impl RepoIssue {
         // - owner/repo/issues/123
         // - owner/repo/123
         // - owner/repo#123
-        let re = Regex::new(r"^([^/]+)/([^/#]+)(?:/(?:issues/)?|#)(\d+)$").unwrap();
+        let re = Regex::new(r"^([^/]+)/([^/#]+)(?:/(?:issues/)?|#)(\d+)$")?;
 
         if let Some(caps) = re.captures(path) {
             let owner = caps[1].to_string();

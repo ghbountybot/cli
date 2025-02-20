@@ -1,0 +1,10 @@
+query ActiveQuests {
+  activeQuests(limit: 10) {
+    organization
+    repository
+    issue {
+      number
+    }
+    shortDescription
+  }
+}

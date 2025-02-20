@@ -1,4 +1,12 @@
-use bounty::{config, Cli};
+#![allow(
+    clippy::doc_markdown,
+    clippy::missing_panics_doc,
+    clippy::missing_errors_doc,
+    clippy::future_not_send,
+    clippy::missing_const_for_fn
+)]
+
+use bounty::{command, config, Cli};
 use clap::Parser;
 
 fn install_tracing() {
@@ -32,8 +40,11 @@ async fn main() -> eyre::Result<()> {
 async fn run() -> eyre::Result<()> {
     let cli = Cli::parse();
     let config = config::Config::load()?;
-    let token = config.try_get_github_token();
 
-    bounty::command::handle(cli.command, token.as_deref()).await?;
+    match cli.command {
+        Some(cmd) => command::handle(cmd, config.try_get_github_token().as_deref()).await?,
+        None => command::handle_default_command().await?,
+    }
+
     Ok(())
 }

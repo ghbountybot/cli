@@ -1,0 +1,195 @@
+---
+description: General rust rules
+globs: **/*.rs,**/*.toml
+---
+# Comprehensive Rust Best Practices Guide
+
+## Core Principles
+- **Zero Nesting**: Optimize for flat code structure
+- **Explicit Constants**: Replace magic numbers with named constants
+- **Error Handling**: Use `eyre` with explicit imports
+- **Testing**: Leverage `cargo nextest` and `trybuild`
+- **Linting**: Automated fixes with clippy
+- **Function Decomposition**: Break complex functions into smaller, focused units
+
+## 1. Code Organization and Nesting
+
+### Function Decomposition and Complexity
+```rust
+// Instead of one large complex function:
+fn process_user_data(user: &User) -> eyre::Result<ProcessedData> {
+    // 50+ lines of complex logic with multiple responsibilities
+}
+
+// Prefer multiple focused functions:
+fn process_user_data(user: &User) -> eyre::Result<ProcessedData> {
+    let validated_data = validate_user_data(user)?;
+    let enriched_data = enrich_user_data(&validated_data)?;
+    finalize_user_data(enriched_data)
+}
+
+fn validate_user_data(user: &User) -> eyre::Result<ValidatedData> {
+    // 15-20 lines focused on validation
+}
+
+fn enrich_user_data(data: &ValidatedData) -> eyre::Result<EnrichedData> {
+    // 15-20 lines focused on enrichment
+}
+
+fn finalize_user_data(data: EnrichedData) -> eyre::Result<ProcessedData> {
+    // 15-20 lines focused on finalization
+}
+```
+
+### Early Returns with Pattern Matching
+```rust
+// Instead of:
+fn process_data(data: Option<Data>) -> eyre::Result<ProcessedData> {
+    if let Some(value) = data {
+        if value.is_valid() {
+            Ok(value.process())
+        } else {
+            Err(eyre!("Invalid data"))
+        }
+    } else {
+        Err(eyre!("No data provided"))
+    }
+}
+
+// Prefer:
+fn process_data(data: Option<Data>) -> eyre::Result<ProcessedData> {
+    let Some(value) = data else {
+        bail!("No data provided");
+    };
+    
+    if !value.is_valid() {
+        bail!("Invalid data");
+    }
+    
+    Ok(value.process())
+}
+```
+
+### Constants and Configuration
+```rust
+// Instead of magic numbers:
+const BASE_TIMEOUT_SECS: u64 = 5;
+const MAX_RETRIES: u32 = 3;
+const BUFFER_SIZE: usize = 1024;
+
+fn calculate_timeout(retries: u32) -> Duration {
+    Duration::from_secs(BASE_TIMEOUT_SECS * u64::from(retries))
+}
+```
+
+## 2. Error Handling with eyre
+
+### Explicit Imports and Usage
+```rust
+// Avoid:
+use eyre::*;
+use eyre::Result;
+
+// Prefer:
+use eyre::{bail, WrapErr};
+
+fn fetch_data() -> eyre::Result<Data> {
+    let response = make_request()
+        .wrap_err("failed to make request")?;
+        
+    let data = parse_response(&response)
+        .wrap_err_with(|| format!("failed to parse {} bytes", response.len()))?;
+        
+    Ok(data)
+}
+```
+
+## 3. Testing Practices
+
+### Unit Tests with nextest
+```fish
+# Run all tests
+cargo nextest run
+
+# Run specific test
+cargo nextest run test_name
+
+# Run with features
+cargo nextest run --all-features
+```
+
+### Integration Tests with trybuild
+```rust
+// tests/compile_tests.rs
+#[test]
+fn compile_tests() {
+    let t = trybuild::TestCases::new();
+    t.compile_fail("tests/compile-fail/*.rs");
+    t.pass("tests/pass/*.rs");
+}
+
+// tests/compile-fail/type_error.rs
+fn main() {
+    let x: String = 42; //~ ERROR mismatched types
+}
+```
+
+## 4. Code Quality and Linting
+
+### Automated Clippy Fixes
+```fish
+# First pass: automatic fixes
+cargo clippy --fix \
+    --allow-staged \
+    --allow-dirty \
+    --all-targets \
+    --all-features \
+    --workspace \
+    --benches \
+    --tests \
+    -- -D warnings
+
+# Second pass: manual review
+cargo clippy --all-targets --all-features --workspace -- -D warnings
+```
+
+### Development Workflow
+1. Write tests first (TDD)
+2. Implement functionality
+3. Run clippy with automatic fixes
+4. Run tests with nextest
+5. Write trybuild tests for compile-time guarantees
+6. Final review for nesting and magic numbers
+
+## 5. Common Patterns and Best Practices
+
+### Functional Combinators
+```rust
+// Instead of nested matches:
+fn find_user_score(users: &HashMap<UserId, User>, id: UserId) -> Option<Score> {
+    users
+        .get(&id)
+        .and_then(|user| user.latest_game())
+        .map(|game| game.score)
+}
+```
+
+### Error Context Builders
+```rust
+fn process_with_context(input: &Input) -> eyre::Result<Output> {
+    process_input(input).wrap_err_with(|| {
+        format!(
+            "failed to process input:\n\
+             size: {} bytes\n\
+             type: {}\n\
+             timestamp: {}",
+            input.size(),
+            input.type_name(),
+            input.timestamp()
+        )
+    })
+}
+```
+
+### Macro Inspection
+```

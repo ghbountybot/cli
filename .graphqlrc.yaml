@@ -1,0 +1,12 @@
+schema: ./schema.graphql
+documents: src/**/*.graphql
+extensions:
+  endpoints:
+    default:
+      url: https://bountybot.dev/api/graphql
+  customDirectives:
+    - name: "key"
+    - name: "tag"
+    - name: "skip"
+    - name: "include"
+    - name: "deprecated" 

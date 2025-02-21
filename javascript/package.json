@@ -15,15 +15,28 @@
     "bin",
     "scripts"
   ],
-  "keywords": ["github", "bounty", "cli"],
+  "keywords": [
+    "github",
+    "bounty",
+    "cli"
+  ],
   "author": "Alec Dusheck <alec@simplyalec.com>",
   "license": "MIT",
-  "os": ["darwin", "linux", "win32"],
-  "cpu": ["x64", "arm64"],
+  "os": [
+    "darwin",
+    "linux",
+    "win32"
+  ],
+  "cpu": [
+    "x64",
+    "arm64"
+  ],
   "devDependencies": {
     "fs-extra": "^11.2.0"
   },
   "dependencies": {
+    "@sentry/node": "^9.1.0",
+    "@sentry/profiling-node": "^9.1.0",
     "fs-extra": "^11.2.0"
   },
   "publishConfig": {

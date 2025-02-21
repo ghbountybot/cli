@@ -8,6 +8,7 @@ on:
 
 env:
   CARGO_TERM_COLOR: always
+  SENTRY_DSN: ${{ secrets.SENTRY_DSN }}
 
 jobs:
   build:

@@ -54,7 +54,7 @@ fn main() -> eyre::Result<()> {
                 auto_session_tracking: true,
                 attach_stacktrace: true,
                 ..Default::default()
-            }
+            },
         ))
     };
 

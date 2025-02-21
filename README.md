@@ -43,3 +43,6 @@ Generate shell completions:
 ```bash
 bounty completion <shell>
 ```
+
+### Error Reporting
+We use Sentry for error reporting and performance monitoring. If you don't want to send errors to Sentry, you can use `DISABLE_SENTRY=1` before running the CLI.

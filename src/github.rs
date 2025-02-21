@@ -111,7 +111,7 @@ pub async fn login(client_id: &str) -> Result<String> {
     let device_code_resp = client
         .post("https://github.com/login/device/code")
         .header("Accept", "application/json")
-        .form(&[("client_id", client_id), ("scope", "repo")])
+        .form(&[("client_id", client_id), ("scope", "public_repo")])
         .send()
         .await?
         .error_for_status()?
